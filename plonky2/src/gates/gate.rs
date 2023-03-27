@@ -24,7 +24,6 @@ use crate::plonk::vars::{
 
 /// A custom gate.
 pub trait Gate<F: RichField + Extendable<D>, const D: usize>: 'static + Send + Sync {
-
     fn export_circom_verification_code(&self) -> String;
     fn export_solidity_verification_code(&self) -> String;
 
