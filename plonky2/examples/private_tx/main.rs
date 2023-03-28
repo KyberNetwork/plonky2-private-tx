@@ -2,7 +2,7 @@ mod client_emulation;
 mod server_emulation;
 mod utxo;
 mod state;
-mod proof;
+mod circuit;
 
 fn main() {
 

@@ -8,8 +8,8 @@ use anyhow::Result;
 use plonky2::hash::hash_types::HashOut;
 use plonky2::plonk::circuit_data::CircuitConfig;
 use plonky2::plonk::config::{Hasher, PoseidonGoldilocksConfig};
-use crate::proof;
-use crate::proof::{PrivateWitness, PublicInputs};
+use crate::circuit;
+use crate::circuit::{PrivateWitness, PublicInputs};
 
 use crate::state::State;
 
@@ -59,11 +59,14 @@ impl Client {
             merkle_proof,
         };
         let public_inp = PublicInputs {
-            nullify_value: old_private_tree_hash,
+            nullifier_value: old_private_tree_hash,
             merkle_root_value: old_root.into(),
+            new_leaf_value: new_private_tree_hash,
         };
+
         //Generate a proof of our privateTX
-        let proof = proof::private_proof::<GoldilocksField, PoseidonGoldilocksConfig, D>(&self.config, p_witness, public_inp, self.tree_height)?;
+        let (circuit_data, wiring) = circuit::private_tx_circuit::<GoldilocksField, PoseidonGoldilocksConfig, D>(&self.config, self.tree_height);
+        let proof = circuit::gen_proof::<GoldilocksField, PoseidonGoldilocksConfig, D>(circuit_data, public_inp, p_witness, wiring)?;
 
         Ok(())
         //We don't need to verify this. let's the server do it.
