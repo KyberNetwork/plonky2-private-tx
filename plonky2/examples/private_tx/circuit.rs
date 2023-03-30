@@ -16,7 +16,7 @@ use plonky2::util::timing::TimingTree;
 use plonky2_field::extension::Extendable;
 use plonky2_field::goldilocks_field::GoldilocksField;
 
-type ProofTuple<F, C, const D: usize> = (
+pub type ProofTuple<F, C, const D: usize> = (
     ProofWithPublicInputs<F, C, D>,
     VerifierOnlyCircuitData<C, D>,
     CommonCircuitData<F, D>,
