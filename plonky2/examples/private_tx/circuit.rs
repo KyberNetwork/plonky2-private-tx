@@ -1,16 +1,17 @@
 use anyhow::Result;
 use log::{info, Level};
 use plonky2::gates::noop::NoopGate;
-
 use plonky2::hash::hash_types::{HashOut, HashOutTarget, RichField};
 use plonky2::hash::merkle_proofs::{MerkleProof, MerkleProofTarget};
 use plonky2::hash::poseidon::PoseidonHash;
 use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::iop::witness::{PartialWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::proof::{Proof, ProofWithPublicInputs, ProofWithPublicInputsTarget};
-use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData};
+use plonky2::plonk::circuit_data::{
+    CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData,
+};
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig, Hasher};
+use plonky2::plonk::proof::{Proof, ProofWithPublicInputs, ProofWithPublicInputsTarget};
 use plonky2::plonk::prover::prove;
 use plonky2::util::timing::TimingTree;
 use plonky2_field::extension::Extendable;
@@ -50,7 +51,11 @@ pub struct WiringTarget {
 }
 
 /// dont touch this unless there is agreement to do so
-pub fn private_tx_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>, const D: usize>(
+pub fn private_tx_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     config: &CircuitConfig,
     tree_height: usize,
 ) -> (CircuitData<F, C, D>, WiringTarget) {
@@ -61,17 +66,17 @@ pub fn private_tx_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>
     let merkle_root_target = builder.add_virtual_hash();
     builder.register_public_inputs(&merkle_root_target.elements);
     // - nullify
-    info!("merkle root target is {:?}", merkle_root_target);
+    // info!("merkle root target is {:?}", merkle_root_target);
 
     let nulifier_target = builder.add_virtual_hash();
-    builder.register_public_inputs(&nulifier_target.elements);    // - new leaf root
+    builder.register_public_inputs(&nulifier_target.elements); // - new leaf root
     let new_leaf_target = builder.add_virtual_hash();
     builder.register_public_inputs(&new_leaf_target.elements);
     // - Merkle proof
     let merkle_proof_target = MerkleProofTarget {
         siblings: builder.add_virtual_hashes(tree_height),
     };
-    info!("1 merkle root target is {:?}", merkle_root_target);
+    // info!("1 merkle root target is {:?}", merkle_root_target);
 
     // Prepare the hash data for UTXO tree
     let private_key_target: [Target; 4] = builder.add_virtual_targets(4).try_into().unwrap();
@@ -85,49 +90,54 @@ pub fn private_tx_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>
         [
             private_key_target,
             [zero_target, zero_target, token_id_target, balance_target],
-        ].concat(),
+        ]
+        .concat(),
         &public_key_index_bits_target,
         merkle_root_target,
         &merkle_proof_target,
     );
 
-    info!("2 merkle root target is {:?}", merkle_root_target);
+    // info!("2 merkle root target is {:?}", merkle_root_target);
 
     let old_leaf = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
         [
             private_key_target,
             [zero_target, zero_target, token_id_target, balance_target],
-        ].concat(),
+        ]
+        .concat(),
     );
     // enforce nullifer == old_leaf
     for i in 0..4 {
-        builder.connect(
-            nulifier_target.elements[i],
-            old_leaf.elements[i],
-        );
+        builder.connect(nulifier_target.elements[i], old_leaf.elements[i]);
     }
 
-    info!("3 merkle root target is {:?}", merkle_root_target);
+    // info!("3 merkle root target is {:?}", merkle_root_target);
 
     //TODO:
     // - enforce nullifier at index = 0
     // - reshash nullifier tree
     // - rehash new leaf
     // - rehash private utxo tree
-    (builder.build::<C>(),
-     WiringTarget {
-         merkle_root_target,
-         nulifier_target,
-         new_leaf_target,
-         merkle_proof_target,
-         private_key_target,
-         token_id_target,
-         balance_target,
-         public_key_index_target,
-     })
+    (
+        builder.build::<C>(),
+        WiringTarget {
+            merkle_root_target,
+            nulifier_target,
+            new_leaf_target,
+            merkle_proof_target,
+            private_key_target,
+            token_id_target,
+            balance_target,
+            public_key_index_target,
+        },
+    )
 }
 
-pub fn gen_private_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>, const D: usize>(
+pub fn gen_private_proof<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     data: CircuitData<F, C, D>,
     public_input: PublicInputs<F>,
     witness: PrivateWitness<F>,
@@ -141,7 +151,8 @@ pub fn gen_private_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>,
     pw.set_hash_target(wiring.nulifier_target, public_input.nullifier_value);
     pw.set_hash_target(wiring.new_leaf_target, public_input.new_leaf_value);
 
-    for (ht, h) in wiring.merkle_proof_target
+    for (ht, h) in wiring
+        .merkle_proof_target
         .siblings
         .into_iter()
         .zip(witness.merkle_proof.siblings.clone())
@@ -153,7 +164,10 @@ pub fn gen_private_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>,
     pw.set_target_arr(wiring.private_key_target, witness.private_key);
     pw.set_target(wiring.token_id_target, witness.token_id);
     pw.set_target(wiring.balance_target, witness.token_amount);
-    pw.set_target(wiring.public_key_index_target, F::from_canonical_u64(witness.index as u64));
+    pw.set_target(
+        wiring.public_key_index_target,
+        F::from_canonical_u64(witness.index as u64),
+    );
     info!("finished setting target");
 
     let mut timing = TimingTree::new("prove", Level::Debug);
@@ -165,12 +179,12 @@ pub fn gen_private_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>,
     Ok((proof, data.verifier_only, data.common))
 }
 
-pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>, const D: usize>(
+pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     data: &CircuitData<F, C, D>,
-    proof: ProofTuple<F, C, D>) -> Result<()> {
+    proof: ProofTuple<F, C, D>,
+) -> Result<()> {
     data.verify(proof.0.clone())
 }
-
 
 pub struct RecursiveWiringTargets<const D: usize> {
     pub pt1: ProofWithPublicInputsTarget<D>,
@@ -183,8 +197,8 @@ pub struct RecursiveWiringTargets<const D: usize> {
 /// reunion 2 proofs and prove that it was generated correctly.
 pub fn recursive_circuit<
     F: RichField + Extendable<D>,
-    C: GenericConfig<D, F=F>,
-    InnerC: GenericConfig<D, F=F>,
+    C: GenericConfig<D, F = F>,
+    InnerC: GenericConfig<D, F = F>,
     const D: usize,
 >(
     inner1: &ProofTuple<F, InnerC, D>,
@@ -192,8 +206,8 @@ pub fn recursive_circuit<
     config: &CircuitConfig,
     min_degree_bits: Option<usize>,
 ) -> (CircuitData<F, C, D>, RecursiveWiringTargets<D>)
-    where
-        InnerC::Hasher: AlgebraicHasher<F>,
+where
+    InnerC::Hasher: AlgebraicHasher<F>,
 {
     let (_, _, inner_cd1) = inner1;
     let (_, _, inner_cd2) = inner2;
@@ -228,20 +242,16 @@ pub fn recursive_circuit<
         }
     }
 
-    (builder.build::<C>(),
-     RecursiveWiringTargets {
-         pt1,
-         pt2,
-         vc1,
-         vc2,
-     }
+    (
+        builder.build::<C>(),
+        RecursiveWiringTargets { pt1, pt2, vc1, vc2 },
     )
 }
 
 pub fn gen_recursive_circuit<
     F: RichField + Extendable<D>,
-    C: GenericConfig<D, F=F>,
-    InnerC: GenericConfig<D, F=F>,
+    C: GenericConfig<D, F = F>,
+    InnerC: GenericConfig<D, F = F>,
     const D: usize,
 >(
     inner1: &ProofTuple<F, InnerC, D>,
@@ -249,8 +259,9 @@ pub fn gen_recursive_circuit<
     data: CircuitData<F, C, D>,
     wiring: RecursiveWiringTargets<D>,
 ) -> Result<ProofTuple<F, C, D>>
-    where
-        InnerC::Hasher: AlgebraicHasher<F>, {
+where
+    InnerC::Hasher: AlgebraicHasher<F>,
+{
     let (inner_proof1, inner_vd1, inner_cd1) = inner1;
     let (inner_proof2, inner_vd2, inner_cd2) = inner2;
 
@@ -269,4 +280,3 @@ pub fn gen_recursive_circuit<
 
     Ok((proof, data.verifier_only, data.common))
 }
-

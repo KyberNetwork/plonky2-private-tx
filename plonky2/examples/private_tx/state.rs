@@ -21,9 +21,15 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(private_utxo_leaves: Vec<Vec<GoldilocksField>>, nullify_leaves: Vec<Vec<GoldilocksField>>) -> Self {
+    pub fn new(
+        private_utxo_leaves: Vec<Vec<GoldilocksField>>,
+        nullify_leaves: Vec<Vec<GoldilocksField>>,
+    ) -> Self {
         Self {
-            private_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(private_utxo_leaves, 0),
+            private_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(
+                private_utxo_leaves,
+                0,
+            ),
             nullify_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(nullify_leaves, 0),
             merkle_cap_height: 0,
             latest_index_utxo: 0,
@@ -31,51 +37,106 @@ impl State {
         }
     }
 
-    pub fn add_private_utxo(&mut self, h: <PoseidonHash as Hasher<GoldilocksField>>::Hash) -> usize {
-        self.private_utxo_tree.update(h.to_vec(), self.latest_index_utxo, self.merkle_cap_height);
+    pub fn add_private_utxo(
+        &mut self,
+        h: <PoseidonHash as Hasher<GoldilocksField>>::Hash,
+    ) -> usize {
+        self.private_utxo_tree
+            .update(h.to_vec(), self.latest_index_utxo, self.merkle_cap_height);
         self.latest_index_utxo = self.latest_index_utxo + 1;
         self.latest_index_utxo
     }
 
-    pub fn add_nullify_utxo(&mut self, h: <PoseidonHash as Hasher<GoldilocksField>>::Hash) -> usize {
-        self.nullify_utxo_tree.update(h.to_vec(), self.latest_index_nullify, self.merkle_cap_height);
+    pub fn add_nullify_utxo(
+        &mut self,
+        h: <PoseidonHash as Hasher<GoldilocksField>>::Hash,
+    ) -> usize {
+        self.nullify_utxo_tree.update(
+            h.to_vec(),
+            self.latest_index_nullify,
+            self.merkle_cap_height,
+        );
         self.latest_index_nullify = self.latest_index_nullify + 1;
         self.latest_index_nullify
     }
 
     //call this from client to get its proof
-    pub fn private_utxo_merkle_proof(&self, index: usize) -> MerkleProof<GoldilocksField, PoseidonHash> {
+    pub fn private_utxo_merkle_proof(
+        &self,
+        index: usize,
+    ) -> MerkleProof<GoldilocksField, PoseidonHash> {
         self.private_utxo_tree.prove(index)
     }
 
     // return a test state with a leave pointing to the user
-    pub fn new_demo_state(prive_key: [GoldilocksField; 4], token_id: GoldilocksField, balance: u64, height: i32) -> (Self, usize) {
-        let leave = PoseidonHash::hash_no_pad(&[prive_key, [GoldilocksField::ZERO, GoldilocksField::ZERO, token_id, GoldilocksField::from_canonical_u64(balance)]].concat())
-            .elements
-            .to_vec();
-        info!("leave private hash {:?}", leave);
+    pub fn new_demo_state(
+        prive_key: [GoldilocksField; 4],
+        token_id: GoldilocksField,
+        balance: u64,
+        height: i32,
+    ) -> (Self, usize) {
+        let leave = PoseidonHash::hash_no_pad(
+            &[
+                prive_key,
+                [
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    token_id,
+                    GoldilocksField::from_canonical_u64(balance),
+                ],
+            ]
+            .concat(),
+        )
+        .elements
+        .to_vec();
+        // info!("leave private hash {:?}", leave);
 
         let n = 1 << height;
-        let mut leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| {
-            PoseidonHash::hash_no_pad(&[GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO])
+        let mut leaves: Vec<Vec<GoldilocksField>> = (0..n)
+            .map(|_| {
+                PoseidonHash::hash_no_pad(&[
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                ])
                 .elements
                 .to_vec()
-        }).collect();
+            })
+            .collect();
         leaves[0] = leave;
-        let nulify_leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| {
-            PoseidonHash::hash_no_pad(&[GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO])
+        let nulify_leaves: Vec<Vec<GoldilocksField>> = (0..n)
+            .map(|_| {
+                PoseidonHash::hash_no_pad(&[
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                    GoldilocksField::ZERO,
+                ])
                 .elements
                 .to_vec()
-        }).collect();
+            })
+            .collect();
         (
             Self {
                 private_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(leaves, 0),
                 latest_index_utxo: 1,
-                nullify_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(nulify_leaves, 0),
+                nullify_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(
+                    nulify_leaves,
+                    0,
+                ),
                 latest_index_nullify: 0,
                 merkle_cap_height: 0,
             },
-            0
+            0,
         )
     }
 }
@@ -85,6 +146,7 @@ mod tests {
     use anyhow::Result;
     use plonky2_field::goldilocks_field::GoldilocksField;
     use plonky2_field::types::Sample;
+
     use crate::state::State;
 
     #[test]
@@ -95,5 +157,3 @@ mod tests {
         Ok(())
     }
 }
-
-
