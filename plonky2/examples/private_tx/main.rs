@@ -27,10 +27,11 @@ fn main() {
     let balance: u64 = 1000;
     let delta: u64 = 100;
     let priv_key: [GoldilocksField; 4] = GoldilocksField::rand_array();
-    let (demo, index) = State::new_demo_state(priv_key, GoldilocksField::rand(), 10000, 10);
+    let (demo, index) = State::new_demo_state(priv_key, token_id, balance, 10);
     let merkle_proof = demo.private_utxo_tree.prove(index);
 
     let old_private_tree_hash = PoseidonHash::hash_no_pad(&[priv_key, [GoldilocksField::ZERO, GoldilocksField::ZERO, token_id, GoldilocksField::from_canonical_u64(balance)]].concat());
+    info!("old private hash {:?}", old_private_tree_hash);
     let old_root = demo.private_utxo_tree.cap.0[0];
     let new_private_tree_hash = PoseidonHash::hash_no_pad(&[priv_key, [GoldilocksField::ZERO, GoldilocksField::ZERO, token_id, GoldilocksField::from_canonical_u64(balance - delta)]].concat());
     let pub_input = PublicInputs {
@@ -53,5 +54,4 @@ fn main() {
     info!("witness: {:?}",private_witness);
 
     let zk_proof = gen_private_proof(data, pub_input, private_witness, wr).unwrap();
-
 }

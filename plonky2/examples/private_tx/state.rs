@@ -1,3 +1,4 @@
+use log::info;
 use plonky2::hash::merkle_proofs::MerkleProof;
 use plonky2::hash::merkle_tree::MerkleTree;
 use plonky2::hash::poseidon::PoseidonHash;
@@ -41,10 +42,20 @@ impl State {
         let leave = PoseidonHash::hash_no_pad(&[prive_key, [GoldilocksField::ZERO, GoldilocksField::ZERO, token_id, GoldilocksField::from_canonical_u64(balance)]].concat())
             .elements
             .to_vec();
+        info!("leave private hash {:?}", leave);
+
         let n = 1 << height;
-        let mut leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| [GoldilocksField::ZERO; 4].to_vec()).collect();
+        let mut leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| {
+            PoseidonHash::hash_no_pad(&[GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO])
+                .elements
+                .to_vec()
+        }).collect();
         leaves[0] = leave;
-        let nulify_leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| [GoldilocksField::ZERO; 4].to_vec()).collect();
+        let nulify_leaves: Vec<Vec<GoldilocksField>> = (0..n).map(|_| {
+            PoseidonHash::hash_no_pad(&[GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO, GoldilocksField::ZERO])
+                .elements
+                .to_vec()
+        }).collect();
         (
             Self {
                 private_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(leaves, 0),
