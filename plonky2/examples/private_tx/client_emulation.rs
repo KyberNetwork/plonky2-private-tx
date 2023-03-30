@@ -66,7 +66,7 @@ impl Client {
 
         //Generate a proof of our privateTX
         let (circuit_data, wiring) = circuit::private_tx_circuit::<GoldilocksField, PoseidonGoldilocksConfig, D>(&self.config, self.tree_height);
-        let proof = circuit::gen_proof::<GoldilocksField, PoseidonGoldilocksConfig, D>(circuit_data, public_inp, p_witness, wiring)?;
+        let proof = circuit::gen_private_proof::<GoldilocksField, PoseidonGoldilocksConfig, D>(circuit_data, public_inp, p_witness, wiring)?;
 
         Ok(())
         //We don't need to verify this. let's the server do it.

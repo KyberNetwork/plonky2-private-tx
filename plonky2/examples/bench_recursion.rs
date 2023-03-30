@@ -127,6 +127,7 @@ fn semaphore_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F>, const
     let mut builder = CircuitBuilder::<F, D>::new(config.clone());
 
     let merkle_root_target = builder.add_virtual_hash();
+    info!("merkle root target is {:?}", merkle_root_target);
     builder.register_public_inputs(&merkle_root_target.elements);
     let nullifier_target = builder.add_virtual_hash();
     builder.register_public_inputs(&nullifier_target.elements);
@@ -542,7 +543,7 @@ pub fn generate_proof_base64<
     let mut fri_commit_phase_merkle_caps =
         vec![
             vec![vec!["0".to_string(); 4]; conf.fri_commit_merkle_cap_height];
-            conf.num_fri_commit_round,
+            conf.num_fri_commit_round
         ];
     for i in 0..conf.num_fri_commit_round {
         let h = pwpi.proof.opening_proof.commit_phase_merkle_caps[i].flatten();
@@ -578,7 +579,7 @@ pub fn generate_proof_base64<
     let mut fri_query_init_constants_sigmas_v =
         vec![
             vec!["0".to_string(); conf.num_fri_query_init_constants_sigmas_v];
-            conf.num_fri_query_round,
+            conf.num_fri_query_round
         ];
     let mut fri_query_init_wires_v =
         vec![vec!["0".to_string(); conf.num_fri_query_init_wires_v]; conf.num_fri_query_round];
@@ -590,22 +591,22 @@ pub fn generate_proof_base64<
     let mut fri_query_init_constants_sigmas_p =
         vec![
             vec![vec!["0".to_string(); 4]; conf.num_fri_query_init_constants_sigmas_p];
-            conf.num_fri_query_round,
+            conf.num_fri_query_round
         ];
     let mut fri_query_init_wires_p =
         vec![
             vec![vec!["0".to_string(); 4]; conf.num_fri_query_init_wires_p];
-            conf.num_fri_query_round,
+            conf.num_fri_query_round
         ];
     let mut fri_query_init_zs_partial_p =
         vec![
             vec![vec!["0".to_string(); 4]; conf.num_fri_query_init_zs_partial_p];
-            conf.num_fri_query_round,
+            conf.num_fri_query_round
         ];
     let mut fri_query_init_quotient_p =
         vec![
             vec![vec!["0".to_string(); 4]; conf.num_fri_query_init_quotient_p];
-            conf.num_fri_query_round,
+            conf.num_fri_query_round
         ];
 
     let mut fri_query_step0_v =

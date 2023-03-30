@@ -2,6 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use anyhow::{ensure, Result};
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::field::extension::Extendable;
@@ -119,6 +120,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
     ) {
         let zero = self.zero();
         let mut state: HashOutTarget = self.hash_or_noop::<H>(leaf_data);
+        info!("leaf index bit {:?}", leaf_index_bits);
+        info!("leaf data {:?}", state);
 
         for (&bit, &sibling) in leaf_index_bits.iter().zip(&proof.siblings) {
             let mut perm_inputs = [zero; SPONGE_WIDTH];
@@ -136,6 +139,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
                 cap_index,
                 merkle_cap.0.iter().map(|h| h.elements[i]).collect(),
             );
+            info!("result hash  {:?}", result);
+
             self.connect(result, state.elements[i]);
         }
     }
