@@ -100,6 +100,11 @@ fn main() {
     client.split_and_submit(13, &mut server).unwrap();
     client.split_and_submit(14, &mut server).unwrap();
     client.split_and_submit(15, &mut server).unwrap();
+    client.split_and_submit(15, &mut server).unwrap();
+    client.split_and_submit(15, &mut server).unwrap();
+    client.split_and_submit(15, &mut server).unwrap();
+    client.split_and_submit(15, &mut server).unwrap();
+    client.split_and_submit(15, &mut server).unwrap();
 
     let (final_proof, vd, cd) = server.get_recursive_proof(0, server.proofs.len() - 1);
 

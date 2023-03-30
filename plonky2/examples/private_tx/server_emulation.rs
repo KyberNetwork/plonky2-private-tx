@@ -4,7 +4,7 @@ use std::ops::{Deref, Index};
 use anyhow::{Error, Result};
 use log::info;
 use plonky2::hash::hash_types::{HashOut, RichField};
-use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData};
+use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData, VerifierOnlyCircuitData};
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 use plonky2_field::extension::Extendable;
 use plonky2_field::goldilocks_field::GoldilocksField;
@@ -78,7 +78,14 @@ impl Server {
         type F = GoldilocksField;
         info!("recur: {:?} {:?}", left, right);
         return if left == right {
-            self.proofs[left].clone()
+            (
+                self.proofs[left].0.clone(),
+                VerifierOnlyCircuitData {
+                    constants_sigmas_cap: self.proofs[left].1.constants_sigmas_cap.clone(),
+                    circuit_digest: self.proofs[left].1.circuit_digest.clone(),
+                },
+                self.proofs[left].2.clone(),
+            )
         } else {
             let mid = (left + right) / 2;
             let inner1 = &self.get_recursive_proof(left, mid);
