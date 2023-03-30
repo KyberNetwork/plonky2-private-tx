@@ -2,6 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use log::info;
 
 use crate::field::extension::{Extendable, FieldExtension};
 use crate::field::types::Field;
@@ -18,7 +19,7 @@ use crate::plonk::config::GenericConfig;
 pub(crate) fn generate_partial_witness<
     'a,
     F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
+    C: GenericConfig<D, F=F>,
     const D: usize,
 >(
     inputs: PartialWitness<F>,
@@ -36,6 +37,7 @@ pub(crate) fn generate_partial_witness<
     );
 
     for (t, v) in inputs.target_values.into_iter() {
+        info!("generate_partial_witness set target {:?} {:?}",t, v);
         witness.set_target(t, v);
     }
 
@@ -145,8 +147,8 @@ impl<F: Field> GeneratedValues<F> {
         et: ExtensionTarget<D>,
         value: F::Extension,
     ) -> Self
-    where
-        F: RichField + Extendable<D>,
+        where
+            F: RichField + Extendable<D>,
     {
         let mut witness = Self::with_capacity(D);
         witness.set_extension_target(et, value);
@@ -186,8 +188,8 @@ impl<F: Field> GeneratedValues<F> {
     }
 
     pub fn set_wires<W>(&mut self, wires: W, values: &[F])
-    where
-        W: IntoIterator<Item = Wire>,
+        where
+            W: IntoIterator<Item=Wire>,
     {
         // If we used itertools, we could use zip_eq for extra safety.
         for (wire, &value) in wires.into_iter().zip(values) {
@@ -196,9 +198,9 @@ impl<F: Field> GeneratedValues<F> {
     }
 
     pub fn set_ext_wires<W, const D: usize>(&mut self, wires: W, value: F::Extension)
-    where
-        F: RichField + Extendable<D>,
-        W: IntoIterator<Item = Wire>,
+        where
+            F: RichField + Extendable<D>,
+            W: IntoIterator<Item=Wire>,
     {
         self.set_wires(wires, &value.to_basefield_array());
     }
@@ -211,8 +213,8 @@ pub trait SimpleGenerator<F: Field>: 'static + Send + Sync + Debug {
     fn run_once(&self, witness: &PartitionWitness<F>, out_buffer: &mut GeneratedValues<F>);
 
     fn adapter(self) -> SimpleGeneratorAdapter<F, Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         SimpleGeneratorAdapter {
             inner: self,
