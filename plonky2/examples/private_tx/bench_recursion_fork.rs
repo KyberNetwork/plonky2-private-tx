@@ -854,7 +854,7 @@ pub fn generate_circom_verifier<
     */
 
     // Load template contract
-    let mut constants = std::fs::read_to_string("../../../template_constants.circom")
+    let mut constants = std::fs::read_to_string("template_constants.circom")
         .expect("Something went wrong reading the file");
 
     let k_is = &common.k_is;
@@ -1050,7 +1050,7 @@ pub fn generate_circom_verifier<
     constants = constants.replace("$G_ARITY_BITS_4", &g.to_string());
 
     // Load gate template
-    let mut gates_lib = std::fs::read_to_string("../../../template_gates.circom")
+    let mut gates_lib = std::fs::read_to_string("template_gates.circom")
         .expect("Something went wrong reading the file");
 
     let num_selectors = common.selectors_info.num_selectors();
@@ -1364,7 +1364,7 @@ fn benchmark(
     let proof_json = generate_proof_base64(&proof, &conf)?;
 
     if !Path::new("./circom/test/data").is_dir() {
-        std::fs::create_dir("../../../circom/test/data")?;
+        std::fs::create_dir("circom/test/data")?;
     }
     //input for snarkjs
     let mut proof_file = File::create("./circom/test/data/proof.json")?;

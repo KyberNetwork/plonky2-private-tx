@@ -33,8 +33,8 @@ pub trait Witness<F: Field> {
     }
 
     fn get_extension_target<const D: usize>(&self, et: ExtensionTarget<D>) -> F::Extension
-        where
-            F: RichField + Extendable<D>,
+    where
+        F: RichField + Extendable<D>,
     {
         F::Extension::from_basefield_array(
             self.get_targets(&et.to_target_array()).try_into().unwrap(),
@@ -42,8 +42,8 @@ pub trait Witness<F: Field> {
     }
 
     fn get_extension_targets<const D: usize>(&self, ets: &[ExtensionTarget<D>]) -> Vec<F::Extension>
-        where
-            F: RichField + Extendable<D>,
+    where
+        F: RichField + Extendable<D>,
     {
         ets.iter()
             .map(|&et| self.get_extension_target(et))
@@ -103,8 +103,8 @@ pub trait Witness<F: Field> {
     }
 
     fn set_extension_target<const D: usize>(&mut self, et: ExtensionTarget<D>, value: F::Extension)
-        where
-            F: RichField + Extendable<D>,
+    where
+        F: RichField + Extendable<D>,
     {
         self.set_target_arr(et.0, value.to_basefield_array());
     }
@@ -134,7 +134,7 @@ pub trait Witness<F: Field> {
 
     /// Set the targets in a `ProofWithPublicInputsTarget` to their corresponding values in a
     /// `ProofWithPublicInputs`.
-    fn set_proof_with_pis_target<C: GenericConfig<D, F=F>, const D: usize>(
+    fn set_proof_with_pis_target<C: GenericConfig<D, F = F>, const D: usize>(
         &mut self,
         proof_with_pis_target: &ProofWithPublicInputsTarget<D>,
         proof_with_pis: &ProofWithPublicInputs<F, C, D>,
@@ -160,7 +160,7 @@ pub trait Witness<F: Field> {
     }
 
     /// Set the targets in a `ProofTarget` to their corresponding values in a `Proof`.
-    fn set_proof_target<C: GenericConfig<D, F=F>, const D: usize>(
+    fn set_proof_target<C: GenericConfig<D, F = F>, const D: usize>(
         &mut self,
         proof_target: &ProofTarget<D>,
         proof: &Proof<F, C, D>,
@@ -199,7 +199,7 @@ pub trait Witness<F: Field> {
         }
     }
 
-    fn set_verifier_data_target<C: GenericConfig<D, F=F>, const D: usize>(
+    fn set_verifier_data_target<C: GenericConfig<D, F = F>, const D: usize>(
         &mut self,
         vdt: &VerifierCircuitTarget,
         vd: &VerifierOnlyCircuitData<C, D>,
@@ -216,8 +216,8 @@ pub trait Witness<F: Field> {
     }
 
     fn set_wires<W>(&mut self, wires: W, values: &[F])
-        where
-            W: IntoIterator<Item=Wire>,
+    where
+        W: IntoIterator<Item = Wire>,
     {
         // If we used itertools, we could use zip_eq for extra safety.
         for (wire, &value) in wires.into_iter().zip(values) {
@@ -226,14 +226,14 @@ pub trait Witness<F: Field> {
     }
 
     fn set_ext_wires<W, const D: usize>(&mut self, wires: W, value: F::Extension)
-        where
-            F: RichField + Extendable<D>,
-            W: IntoIterator<Item=Wire>,
+    where
+        F: RichField + Extendable<D>,
+        W: IntoIterator<Item = Wire>,
     {
         self.set_wires(wires, &value.to_basefield_array());
     }
 
-    fn extend<I: Iterator<Item=(Target, F)>>(&mut self, pairs: I) {
+    fn extend<I: Iterator<Item = (Target, F)>>(&mut self, pairs: I) {
         for (t, v) in pairs {
             self.set_target(t, v);
         }
@@ -270,7 +270,7 @@ impl<F: Field> Witness<F> for PartialWitness<F> {
     }
 
     fn set_target(&mut self, target: Target, value: F) {
-        info!("setting target {:?} value {:?}",target, value);
+        info!("setting target {:?} value {:?}", target, value);
         let opt_old_value = self.target_values.insert(target, value);
         if let Some(old_value) = opt_old_value {
             assert_eq!(
@@ -307,7 +307,10 @@ impl<'a, F: Field> PartitionWitness<'a, F> {
     pub(crate) fn set_target_returning_rep(&mut self, target: Target, value: F) -> Option<usize> {
         let rep_index = self.representative_map[self.target_index(target)];
         let rep_value = &mut self.values[rep_index];
-        info!("set_target_returning_rep set target {:?} {:?}",target, value);
+        info!(
+            "set_target_returning_rep set target {:?} {:?}",
+            target, value
+        );
         if let Some(old_value) = *rep_value {
             assert_eq!(
                 value, old_value,
