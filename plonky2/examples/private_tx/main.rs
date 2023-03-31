@@ -35,10 +35,10 @@ fn main() {
 
     info!("starting test");
     const D: usize = 2;
-    const tree_height: usize = 10;
+    const TREE_HEIGHT: usize = 10;
     let zk_config = CircuitConfig::standard_recursion_config();
     let (data, wr) =
-        private_tx_circuit::<GoldilocksField, PoseidonGoldilocksConfig, D>(&zk_config, tree_height);
+        private_tx_circuit::<GoldilocksField, PoseidonGoldilocksConfig, D>(&zk_config, TREE_HEIGHT);
     let token_id = GoldilocksField::from_canonical_u64(1);
     let balance: u64 = 1000;
     let delta: u64 = 100;
@@ -58,7 +58,7 @@ fn main() {
         ]
         .concat(),
     );
-    // info!("old private hash {:?}", old_private_tree_hash);
+    info!("old private hash {:?}", old_private_tree_hash);
     let old_root = demo.private_utxo_tree.cap.0[0];
     let new_private_tree_hash = PoseidonHash::hash_no_pad(
         &[
@@ -85,17 +85,16 @@ fn main() {
         merkle_proof,
     };
 
-    // info!("nullifier_value: {:?}", old_private_tree_hash);
-    // info!("new_leaf_value: {:?}", new_private_tree_hash);
-    // info!("pub_input: {:?}", pub_input);
+    info!("nullifier_value: {:?}", old_private_tree_hash);
+    info!("new_leaf_value: {:?}", new_private_tree_hash);
+    info!("pub_input: {:?}", pub_input);
     //
-    // info!("witness: {:?}", private_witness);
+    info!("witness: {:?}", private_witness);
 
-    let zk_proof = gen_private_proof(data, pub_input, private_witness, wr).unwrap();
-
-    let mut client = Client::new(demo.clone(), priv_key, token_id, 1000, 0);
+    let mut client = Client::new(priv_key, token_id, 1000, 0);
     let mut server = Server::new(demo.clone());
 
+    client.get_state_from_server(&server);
     client.split_and_submit(12, &mut server).unwrap();
     client.split_and_submit(13, &mut server).unwrap();
     client.split_and_submit(14, &mut server).unwrap();

@@ -96,4 +96,8 @@ impl Server {
             return gen_recursive_circuit::<F, C, C, D>(inner1, inner2, data1, wiring1).unwrap();
         };
     }
+
+    pub fn get_state(&self) -> State {
+        self.state.clone()
+    }
 }

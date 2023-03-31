@@ -66,7 +66,7 @@ pub fn private_tx_circuit<
     let merkle_root_target = builder.add_virtual_hash();
     builder.register_public_inputs(&merkle_root_target.elements);
     // - nullify
-    // info!("merkle root target is {:?}", merkle_root_target);
+    info!("merkle root target is {:?}", merkle_root_target);
 
     let nulifier_target = builder.add_virtual_hash();
     builder.register_public_inputs(&nulifier_target.elements); // - new leaf root
@@ -76,7 +76,7 @@ pub fn private_tx_circuit<
     let merkle_proof_target = MerkleProofTarget {
         siblings: builder.add_virtual_hashes(tree_height),
     };
-    // info!("1 merkle root target is {:?}", merkle_root_target);
+    info!("1 merkle root target is {:?}", merkle_root_target);
 
     // Prepare the hash data for UTXO tree
     let private_key_target: [Target; 4] = builder.add_virtual_targets(4).try_into().unwrap();
@@ -97,7 +97,7 @@ pub fn private_tx_circuit<
         &merkle_proof_target,
     );
 
-    // info!("2 merkle root target is {:?}", merkle_root_target);
+    info!("2 merkle root target is {:?}", merkle_root_target);
 
     let old_leaf = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
         [
@@ -111,7 +111,7 @@ pub fn private_tx_circuit<
         builder.connect(nulifier_target.elements[i], old_leaf.elements[i]);
     }
 
-    // info!("3 merkle root target is {:?}", merkle_root_target);
+    info!("3 merkle root target is {:?}", merkle_root_target);
 
     //TODO:
     // - enforce nullifier at index = 0
@@ -151,6 +151,19 @@ pub fn gen_private_proof<
     pw.set_hash_target(wiring.nulifier_target, public_input.nullifier_value);
     pw.set_hash_target(wiring.new_leaf_target, public_input.new_leaf_value);
 
+    info!(
+        "what::: {:?} {:?}",
+        wiring.merkle_root_target, public_input.merkle_root_value
+    );
+    info!(
+        "what::: {:?} {:?}",
+        wiring.nulifier_target, public_input.nullifier_value
+    );
+    info!(
+        "what::: {:?} {:?}",
+        wiring.new_leaf_target, public_input.new_leaf_value
+    );
+
     for (ht, h) in wiring
         .merkle_proof_target
         .siblings
@@ -168,6 +181,12 @@ pub fn gen_private_proof<
         wiring.public_key_index_target,
         F::from_canonical_u64(witness.index as u64),
     );
+
+    info!("{:?} {:?}", wiring.private_key_target, witness.private_key);
+    info!("{:?} {:?}", wiring.token_id_target, witness.token_id);
+    info!("{:?} {:?}", wiring.balance_target, witness.token_amount);
+    info!("{:?} {:?}", wiring.public_key_index_target, witness.index);
+
     info!("finished setting target");
 
     let mut timing = TimingTree::new("prove", Level::Debug);

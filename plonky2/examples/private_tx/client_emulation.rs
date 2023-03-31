@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use plonky2::hash::hash_types::{HashOut, RichField};
+use plonky2::hash::merkle_tree::{MerkleCap, MerkleTree};
 use plonky2::hash::poseidon::PoseidonHash;
 use plonky2::plonk::circuit_data::CircuitConfig;
 use plonky2::plonk::config::{GenericConfig, Hasher, PoseidonGoldilocksConfig};
@@ -27,14 +28,27 @@ pub struct Client {
 impl Client {
     //state must include a leaf with priv_key
     pub fn new(
-        state: State,
         priv_key: [GoldilocksField; 4],
         token_id: GoldilocksField,
         balance: u64,
         priv_index: usize,
     ) -> Self {
         Self {
-            state,
+            state: State {
+                private_utxo_tree: MerkleTree {
+                    leaves: vec![],
+                    digests: vec![],
+                    cap: MerkleCap(vec![]),
+                },
+                next_index_utxo: 0,
+                nullify_utxo_tree: MerkleTree {
+                    leaves: vec![],
+                    digests: vec![],
+                    cap: MerkleCap(vec![]),
+                },
+                next_index_nullify: 0,
+                merkle_cap_height: 0,
+            },
             priv_key,
             token_id,
             balance,
@@ -42,6 +56,10 @@ impl Client {
             config: CircuitConfig::standard_recursion_config(),
             tree_height: 10,
         }
+    }
+
+    pub fn get_state_from_server(&mut self, server: &Server) {
+        self.state = server.get_state()
     }
 
     pub fn split_and_submit(&mut self, delta: u64, server: &mut Server) -> Result<()> {
@@ -88,6 +106,11 @@ impl Client {
             new_leaf_value: new_private_tree_hash,
         };
 
+        println!(
+            "{:?} {:?} {:?}",
+            p_witness.token_amount, public_inp.nullifier_value, public_inp.new_leaf_value
+        );
+
         //Generate a proof of our privateTX
         let (circuit_data, wiring) = circuit::private_tx_circuit::<
             GoldilocksField,
@@ -101,13 +124,13 @@ impl Client {
             wiring,
         )?;
 
-        let new_index = server
+        // //  re-update state
+        self.priv_index = server
             .verify_and_update_state(proof, public_inp.clone())
             .unwrap();
-        // update state tree
-        let _ = self
-            .state
-            .add_private_utxo(public_inp.new_leaf_value.clone());
+        self.balance = self.balance - delta;
+        self.get_state_from_server(server);
+
         Ok(())
         //We don't need to verify this. let's the server do it.
     }
@@ -133,10 +156,10 @@ mod tests {
         let proof = demoState.private_utxo_tree.prove(index);
         let token_id = GoldilocksField(1);
 
-        let mut client = Client::new(demoState.clone(), prive_key, token_id, 1000, 0);
-        let server = Server::new(demoState.clone());
-
-        client.split_and_submit(12, server).unwrap();
+        let mut client = Client::new(prive_key, token_id, balance, 0);
+        let mut server = Server::new(demoState.clone());
+        client.get_state_from_server(&server);
+        client.split_and_submit(12, &mut server).unwrap();
         Ok(())
     }
 }

@@ -10,12 +10,12 @@ use plonky2_field::types::Field;
 pub struct State {
     //private_utxo_tree stores Hash (privateKey, 0,0, tokenID, token_amount) of currently available tree
     pub private_utxo_tree: MerkleTree<GoldilocksField, PoseidonHash>,
-    // latest_index_utxo is the next index which is used to store new leaf
-    pub latest_index_utxo: usize,
+    // next_index_utxo is the next index which is used to store new leaf
+    pub next_index_utxo: usize,
     //nullify_utxo_tree stores Hash (privateKey, 0,0, tokenID, token_amount) of the used tree
     pub nullify_utxo_tree: MerkleTree<GoldilocksField, PoseidonHash>,
-    //  latest_index_nullify is the next index which is used to store new leaf
-    pub latest_index_nullify: usize,
+    //  next_index_nullify is the next index which is used to store new leaf
+    pub next_index_nullify: usize,
     //cap height h is the h-th layer from the root of the intermedia hashes.
     pub merkle_cap_height: usize,
 }
@@ -32,8 +32,8 @@ impl State {
             ),
             nullify_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(nullify_leaves, 0),
             merkle_cap_height: 0,
-            latest_index_utxo: 0,
-            latest_index_nullify: 0,
+            next_index_utxo: 0,
+            next_index_nullify: 0,
         }
     }
 
@@ -42,22 +42,21 @@ impl State {
         h: <PoseidonHash as Hasher<GoldilocksField>>::Hash,
     ) -> usize {
         self.private_utxo_tree
-            .update(h.to_vec(), self.latest_index_utxo, self.merkle_cap_height);
-        self.latest_index_utxo = self.latest_index_utxo + 1;
-        self.latest_index_utxo
+            .update(h.to_vec(), self.next_index_utxo, self.merkle_cap_height);
+        self.next_index_utxo = self.next_index_utxo + 1;
+        //  return the index of new leaf
+        self.next_index_utxo - 1
     }
 
     pub fn add_nullify_utxo(
         &mut self,
         h: <PoseidonHash as Hasher<GoldilocksField>>::Hash,
     ) -> usize {
-        self.nullify_utxo_tree.update(
-            h.to_vec(),
-            self.latest_index_nullify,
-            self.merkle_cap_height,
-        );
-        self.latest_index_nullify = self.latest_index_nullify + 1;
-        self.latest_index_nullify
+        self.nullify_utxo_tree
+            .update(h.to_vec(), self.next_index_nullify, self.merkle_cap_height);
+        self.next_index_nullify = self.next_index_nullify + 1;
+        //  return the index of new leaf
+        self.next_index_nullify - 1
     }
 
     //call this from client to get its proof
@@ -89,7 +88,7 @@ impl State {
         )
         .elements
         .to_vec();
-        // info!("leave private hash {:?}", leave);
+        info!("leave private hash {:?}", leave);
 
         let n = 1 << height;
         let mut leaves: Vec<Vec<GoldilocksField>> = (0..n)
@@ -128,12 +127,12 @@ impl State {
         (
             Self {
                 private_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(leaves, 0),
-                latest_index_utxo: 1,
+                next_index_utxo: 1,
                 nullify_utxo_tree: MerkleTree::<GoldilocksField, PoseidonHash>::new(
                     nulify_leaves,
                     0,
                 ),
-                latest_index_nullify: 0,
+                next_index_nullify: 0,
                 merkle_cap_height: 0,
             },
             0,
